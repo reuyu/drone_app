@@ -1,0 +1,169 @@
+<% let sector=paramBlocks[0][0]; %>
+
+-- 1. 로우코드 플랫폼에서 넘어온 값('chan')을 받습니다.
+-- 주의: 테이블을 찾기 위해선 ID가 아니라 '이름(drone_name)'이 필요합니다.
+SET @raw_input = <%= sector.drone_name %>;
+
+-- 2. 따옴표(')를 제거하여 순수한 테이블 이름(chan)만 남깁니다.
+SET @clean_name = REPLACE(@raw_input, '\'', '');
+
+-- 3. 쿼리를 조립합니다.
+SET @sql_query = CONCAT(
+    'SELECT d.*, c.drone_connect_time ', -- 필요한 컬럼 선택
+    'FROM `', @clean_name, '` AS d ',   -- 예: FROM `chan` AS d
+    'JOIN drone_list AS c ON d.drone_db_id = c.drone_db_id ',
+    'WHERE DATE(d.event_time) = DATE(NOW()) ', -- 오늘 날짜 데이터만
+    'ORDER BY d.event_time DESC'
+);
+
+-- 4. 조립된 쿼리 실행
+PREPARE stmt FROM @sql_query;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+<% let sector=paramBlocks[0]; %>
+
+SELECT 
+    drone_name,
+    drone_lat,
+    drone_lon,
+    drone_db_id,
+    drone_video_url
+FROM 
+    drone_list
+WHERE 
+    drone_name = <%= sector[0].drone_name %>;
+
+<% let sector = paramBlocks[0][0]; %>
+-- #############################################
+-- [입력 설정]
+-- #############################################
+SET @target_db    = 'smoke_db';
+SET @input_name   = <%= sector.drone_name %>;      -- 예: 'chan'
+SET @input_lat    = NULL;
+SET @input_lon    = NULL;
+
+-- #############################################
+-- [수정됨] URL 가져오기 (Collation 충돌 방지 구문 추가)
+-- #############################################
+SET @input_url = NULL;
+
+SELECT stream_video_url INTO @input_url
+FROM video_url
+-- 여기에 COLLATE 구문을 추가하여 충돌을 막았습니다.
+WHERE drone_name = @input_name COLLATE utf8mb4_general_ci
+LIMIT 1;
+
+-- #############################################
+-- [자동화 스크립트 실행]
+-- #############################################
+
+-- 1. 새로운 ID 생성
+SELECT 
+    IFNULL(
+        CONCAT('GK_2025_', LPAD(CAST(SUBSTRING(MAX(drone_db_id), 9) AS UNSIGNED) + 1, 2, '0')),
+        'GK_2025_00'
+    ) 
+INTO @new_id
+FROM drone_list 
+WHERE drone_db_id LIKE 'GK_2025_%' COLLATE utf8mb4_general_ci;
+
+-- 2. 메인 리스트에 등록
+INSERT INTO drone_list (drone_db_id, drone_name, drone_video_url, drone_connect_time, drone_lat, drone_lon)
+VALUES (@new_id, @input_name, @input_url, NOW(), @input_lat, @input_lon);
+
+-- 3. 동적 쿼리 생성 준비 (따옴표 제거)
+SET @clean_name = REPLACE(@input_name, '\'', '');
+
+-- 4. 유저 및 테이블 생성 쿼리 조립
+SET @sql_drop_user = CONCAT('DROP USER IF EXISTS ''', @new_id, '''@''%''');
+
+SET @sql_create_user = CONCAT('CREATE USER ''', @new_id, '''@''%''');
+
+SET @sql_create_table = CONCAT(
+    'CREATE TABLE `', @clean_name, '` (',
+    '  id INT AUTO_INCREMENT PRIMARY KEY,',
+    '  drone_db_id VARCHAR(20) NOT NULL COLLATE utf8mb4_general_ci,',
+    '  event_time DATETIME DEFAULT CURRENT_TIMESTAMP,',
+    '  confidence FLOAT,',
+    '  image_path VARCHAR(255),',
+    '  gps_lat DECIMAL(10, 8),',
+    '  gps_lon DECIMAL(11, 8),',
+    '  CONSTRAINT `fk_', @clean_name, '_id` ',
+    '  FOREIGN KEY (drone_db_id) REFERENCES drone_list(drone_db_id) ON DELETE CASCADE',
+    ') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci'
+);
+
+SET @sql_grant_list = CONCAT('GRANT SELECT ON ', @target_db, '.drone_list TO ''', @new_id, '''@''%''');
+SET @sql_grant_self = CONCAT('GRANT SELECT, INSERT ON ', @target_db, '.`', @clean_name, '` TO ''', @new_id, '''@''%''');
+
+-- 5. 실행
+PREPARE stmt_drop FROM @sql_drop_user; EXECUTE stmt_drop; DEALLOCATE PREPARE stmt_drop;
+PREPARE stmt_user FROM @sql_create_user; EXECUTE stmt_user; DEALLOCATE PREPARE stmt_user;
+PREPARE stmt_table FROM @sql_create_table; EXECUTE stmt_table; DEALLOCATE PREPARE stmt_table;
+PREPARE stmt_grant1 FROM @sql_grant_list; EXECUTE stmt_grant1; DEALLOCATE PREPARE stmt_grant1;
+PREPARE stmt_grant2 FROM @sql_grant_self; EXECUTE stmt_grant2; DEALLOCATE PREPARE stmt_grant2;
+
+FLUSH PRIVILEGES;
+
+-- 6. 결과 확인
+SELECT * FROM drone_list;
+
+<% let sector=paramBlocks[0]; %>
+
+-- 1. 플랫폼에서 들어온 값('chan')을 변수에 담습니다.
+SET @raw_input = <%= sector[0].drone_name %>;
+
+-- 2. SQL 함수를 이용해 앞뒤 따옴표(')를 제거합니다.
+-- 결과: 'chan' -> chan
+SET @clean_name = REPLACE(@raw_input, '\'', '');
+
+-- 3. 쿼리 문장을 문자열로 조립합니다. (CONCAT 사용)
+SET @sql_query = CONCAT(
+    'SELECT d.image_path, d.event_time ',
+    'FROM `', @clean_name, '` AS d ',  -- 여기서 백틱(`)으로 감싼 깨끗한 이름이 들어갑니다.
+    'JOIN drone_list AS c ON d.drone_db_id = c.drone_db_id ',
+    'WHERE d.event_time > c.drone_connect_time ',
+    'ORDER BY d.event_time DESC'
+);
+
+-- 4. 조립된 쿼리를 실행합니다.
+PREPARE stmt FROM @sql_query;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+<% let sector=paramBlocks[0][0]; %>
+
+
+SELECT * FROM drone_list
+
+<% let sector=paramBlocks[0]; %>
+
+-- 1. 입력 변수 받기 (로우코드 플랫폼에서 '값' 형태로 들어옴)
+SET @input_name = <%= sector[0].drone_name %>;    -- 예: 'chan'
+SET @input_date = <%= sector[0].Selected_date %>; -- 예: '2025-12-03'
+
+-- 2. 테이블 이름으로 쓰기 위해 드론 이름에서 따옴표(') 제거
+-- 결과: 'chan' -> chan
+SET @clean_name = REPLACE(@input_name, '\'', '');
+
+-- 3. 쿼리 조립
+SET @sql_query = CONCAT(
+    'SELECT d.*, c.drone_connect_time ',
+    'FROM `', @clean_name, '` AS d ',  -- 따옴표 뗀 이름(chan)이 여기 들어감 (백틱 적용)
+    'JOIN drone_list AS c ON d.drone_db_id = c.drone_db_id ',
+    'WHERE DATE(d.event_time) = DATE(', @input_date, ') ', -- 날짜는 따옴표 있는 채로 들어감 ('2025..')
+    'ORDER BY d.event_time DESC'
+);
+
+-- 4. 실행
+PREPARE stmt FROM @sql_query;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+<% let sector = paramBlocks[0]; %>
+
+
+UPDATE `drone_list`
+SET `drone_connect_time` = NOW()
+WHERE drone_name = <%= sector[0].Selected_drone %>; -- 어떤 드론의 레코드를 업데이트할지 지정

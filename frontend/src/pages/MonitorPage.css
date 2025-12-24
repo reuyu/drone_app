@@ -1,0 +1,182 @@
+.monitor-page {
+    padding: 15px;
+    padding-bottom: 80px;
+}
+
+/* [NEW] 모니터링 정보 헤더 */
+.monitor-header-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.drone-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.drone-title .icon {
+    font-size: 1.8rem;
+    background: rgba(56, 139, 253, 0.15);
+    padding: 8px;
+    border-radius: 50%;
+}
+
+.drone-title h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #f0f6fc;
+}
+
+.drone-title .sub-id {
+    font-size: 0.75rem;
+    color: #8b949e;
+}
+
+.drone-status-info {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gps-info {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: #8b949e;
+}
+
+.gps-info .label {
+    margin-right: 5px;
+    color: #58a6ff;
+    font-weight: bold;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #238636;
+}
+
+.status-indicator .dot {
+    width: 8px;
+    height: 8px;
+    background-color: #238636;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #238636;
+}
+
+/* 영상 영역 */
+.video-area {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border: 1px solid #30363d;
+}
+
+.live-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #8b949e;
+}
+
+.video-fallback .icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    opacity: 0.7;
+}
+
+.status-overlay {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+}
+
+.status-badge.live {
+    background: #f85149;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 최신 로그 카드 */
+.latest-log-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 5px;
+}
+
+.latest-log-card h4 {
+    margin: 0 0 10px 0;
+    font-size: 0.85rem;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.log-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.log-row .time {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #c9d1d9;
+}
+
+.confidence-tag {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.confidence-tag.danger {
+    background: rgba(248, 81, 73, 0.2);
+    color: #f85149;
+    border: 1px solid rgba(248, 81, 73, 0.4);
+}
+
+.confidence-tag.warning {
+    background: rgba(210, 153, 34, 0.2);
+    color: #d29922;
+    border: 1px solid rgba(210, 153, 34, 0.4);
+}
+
+.no-data {
+    text-align: center;
+    color: #8b949e;
+    font-size: 0.9rem;
+    padding: 5px 0;
+}

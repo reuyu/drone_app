@@ -1,0 +1,154 @@
+.home-page {
+  padding: 20px;
+  max-width: 100%;
+}
+
+.home-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-top: 20px;
+}
+
+.home-header h1 {
+  font-size: 1.8rem;
+  background: linear-gradient(90deg, #ff6b35, #f08a5d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 5px;
+}
+
+.home-header p {
+  color: #8b949e;
+  font-size: 0.9rem;
+}
+
+.section-title {
+  margin-bottom: 15px;
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 5px;
+}
+
+.section-title h3 {
+  font-size: 1rem;
+  color: #c9d1d9;
+}
+
+.drone-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.drone-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.drone-card:active {
+  transform: scale(0.98);
+}
+
+.drone-card:hover {
+  border-color: #ff6b35;
+}
+
+.drone-icon {
+  font-size: 1.5rem;
+  margin-right: 15px;
+}
+
+.drone-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.drone-info .name {
+  font-weight: bold;
+  color: #f0f6fc;
+  font-size: 1rem;
+}
+
+.drone-info .id {
+  font-size: 0.8rem;
+  color: #8b949e;
+}
+
+.drone-info .status {
+  font-size: 0.7rem;
+  color: #238636;
+  margin-top: 2px;
+}
+
+.arrow {
+  color: #8b949e;
+  font-size: 1.2rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: #8b949e;
+  background: #0d1117;
+  border: 1px dashed #30363d;
+  border-radius: 8px;
+}
+
+.register-section {
+  background: #161b22;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #30363d;
+}
+
+.register-section h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  color: #ff6b35;
+}
+
+.register-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.register-form input {
+  flex: 1;
+  padding: 12px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+}
+
+.register-form button {
+  padding: 0 20px;
+  background: #238636;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.register-form button:disabled {
+  background: #30363d;
+  opacity: 0.7;
+}
+
+.register-hint {
+  font-size: 0.75rem;
+  color: #8b949e;
+  margin: 0;
+  line-height: 1.4;
+}

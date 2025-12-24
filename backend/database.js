@@ -1,0 +1,128 @@
+/**
+ * database.js - MySQL 연결 풀 설정
+ * 
+ * Jetson 로컬 MySQL 서버에 연결하는 Connection Pool을 관리합니다.
+ * 환경 변수 또는 기본값을 사용하여 연결 설정을 구성합니다.
+ */
+
+const mysql = require('mysql2/promise');
+
+// MySQL Connection Pool 생성
+const pool = mysql.createPool({
+    host: process.env.DB_HOST || '0.tcp.jp.ngrok.io',
+    port: process.env.DB_PORT || 12191,
+    user: process.env.DB_USER || 'flex_user',
+    password: process.env.DB_PASSWORD || '1234',
+    database: process.env.DB_NAME || 'smoke_db',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    // 타임아웃 설정 (외부 네트워크 고려하여 10초로 설정)
+    connectTimeout: 10000,
+    // 자동 재연결 지원을 위한 설정
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
+});
+
+/**
+ * 데이터베이스 초기화 함수
+ * 필수 테이블들을 생성합니다.
+ */
+async function initializeDatabase() {
+    const connection = await pool.getConnection();
+
+    try {
+        console.log('🔧 데이터베이스 초기화 시작...');
+
+        // 1. drone_list 테이블 생성 (드론 등록 정보)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS drone_list (
+                drone_db_id VARCHAR(20) NOT NULL PRIMARY KEY,
+                drone_name VARCHAR(100) NOT NULL UNIQUE,
+                drone_video_url VARCHAR(255) NULL,
+                drone_connect_time DATETIME NULL,
+                drone_lat DECIMAL(10,8) NULL,
+                drone_lon DECIMAL(11,8) NULL
+            )
+        `);
+        console.log('✅ drone_list 테이블 준비 완료');
+
+        // 2. video_url 테이블 생성 (사전 정의된 URL 매핑) - 사용자 요청 반영 (drone_url -> video_url)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS video_url (
+                drone_name VARCHAR(100) NULL UNIQUE,
+                stream_video_url VARCHAR(2048) NULL
+            )
+        `);
+        console.log('✅ video_url 테이블 준비 완료');
+
+        console.log('🎉 데이터베이스 초기화 완료!');
+    } catch (error) {
+        console.error('❌ 데이터베이스 초기화 실패:', error.message);
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
+/**
+ * 드론별 동적 로그 테이블 생성 함수
+ * @param {string} droneName - 드론 이름 (테이블명으로 사용)
+ */
+async function createDroneLogTable(droneName) {
+    // SQL Injection 방지를 위한 드론 이름 검증
+    const sanitizedName = droneName.replace(/[^a-zA-Z0-9_]/g, '_');
+
+    if (sanitizedName !== droneName) {
+        console.warn(`⚠️ 드론 이름이 정제되었습니다: ${droneName} -> ${sanitizedName}`);
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+        // 동적 테이블 생성 쿼리
+        const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS \`${sanitizedName}\` (
+                id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                drone_db_id VARCHAR(20) NOT NULL,
+                event_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+                confidence FLOAT NULL,
+                image_path VARCHAR(255) NULL,
+                gps_lat DECIMAL(10,8) NULL,
+                gps_lon DECIMAL(11,8) NULL
+            )
+        `;
+
+        await connection.execute(createTableQuery);
+        console.log(`✅ 드론 로그 테이블 생성 완료: ${sanitizedName}`);
+
+        return sanitizedName;
+    } catch (error) {
+        console.error(`❌ 드론 로그 테이블 생성 실패 (${sanitizedName}):`, error.message);
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
+/**
+ * 연결 테스트 함수
+ */
+async function testConnection() {
+    try {
+        const connection = await pool.getConnection();
+        console.log('✅ MySQL 연결 성공!');
+        connection.release();
+        return true;
+    } catch (error) {
+        console.error('❌ MySQL 연결 실패:', error.message);
+        return false;
+    }
+}
+
+module.exports = {
+    pool,
+    initializeDatabase,
+    createDroneLogTable,
+    testConnection
+};
