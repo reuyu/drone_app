@@ -9,8 +9,8 @@ const mysql = require('mysql2/promise');
 
 // MySQL Connection Pool 생성
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || '0.tcp.jp.ngrok.io',
-    port: process.env.DB_PORT || 12191,
+    host: process.env.DB_HOST || '220.69.241.189',
+    port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'flex_user',
     password: process.env.DB_PASSWORD || '1234',
     database: process.env.DB_NAME || 'smoke_db',
