@@ -1,0 +1,2 @@
+backend에서  npm start
+front_end에서 npm expo start
