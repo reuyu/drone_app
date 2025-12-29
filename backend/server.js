@@ -11,7 +11,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
-const { pool, initializeDatabase, createDroneLogTable, testConnection } = require('./database');
+const { pool, initializeDatabase, createDroneLogTable, createDroneDbUser, testConnection } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -70,6 +70,10 @@ app.post('/api/register', async (req, res) => {
         }
 
         const logTable = await createDroneLogTable(drone_name);
+
+        // [NEW] 드론 전용 DB 유저 생성 및 권한 부여
+        await createDroneDbUser(drone_db_id, drone_name);
+
         await connection.commit();
 
         res.json({ success: true, message: 'Registered', data: { drone_name, drone_db_id, log_table: logTable, video_url: videoUrl } });
@@ -87,7 +91,7 @@ app.post('/api/register', async (req, res) => {
  * POST /api/event
  */
 app.post('/api/event', async (req, res) => {
-    const { drone_name, confidence, image_path, gps_lat, gps_lon } = req.body;
+    const { drone_name, confidence, image_path, gps_lat, gps_lon, risk_level, temperature, humidity, wind_speed } = req.body;
     if (!drone_name) return res.status(400).json({ success: false, message: 'drone_name required' });
 
     const sanitizedTableName = drone_name.replace(/[^a-zA-Z0-9_]/g, '_');
@@ -98,12 +102,44 @@ app.post('/api/event', async (req, res) => {
 
         const drone_db_id = droneRows[0].drone_db_id;
 
+        // 1. 로그 테이블에 이벤트 기록
         const [result] = await pool.execute(`
-            INSERT INTO \`${sanitizedTableName}\` (drone_db_id, confidence, image_path, gps_lat, gps_lon)
-            VALUES (?, ?, ?, ?, ?)
-        `, [drone_db_id, confidence || null, image_path || null, gps_lat || null, gps_lon || null]);
+            INSERT INTO \`${sanitizedTableName}\` (drone_db_id, confidence, image_path, gps_lat, gps_lon, risk_level, temperature, humidity, wind_speed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            drone_db_id,
+            confidence || null,
+            image_path || null,
+            gps_lat || null,
+            gps_lon || null,
+            risk_level || null,
+            temperature || null,
+            humidity || null,
+            wind_speed || null
+        ]);
 
-        console.log(`🔥 Fire Event: ${drone_name} (${(confidence * 100).toFixed(1)}%)`);
+        // 2. drone_list 최신 상태 업데이트 (모니터링 화면용)
+        await pool.execute(`
+            UPDATE drone_list 
+            SET drone_connect_time = NOW(),
+                drone_lat = ?, 
+                drone_lon = ?,
+                risk_level = ?,
+                temperature = ?,
+                humidity = ?,
+                wind_speed = ?
+            WHERE drone_name = ?
+        `, [
+            gps_lat || null,
+            gps_lon || null,
+            risk_level || null,
+            temperature || null,
+            humidity || null,
+            wind_speed || null,
+            drone_name
+        ]);
+
+        console.log(`🔥 Fire Event: ${drone_name} (${(confidence * 100).toFixed(1)}%) - Risk: ${risk_level}`);
         res.json({ success: true, message: 'Event saved', data: { event_id: result.insertId } });
 
     } catch (error) {
@@ -117,21 +153,30 @@ app.post('/api/event', async (req, res) => {
  */
 app.get('/api/logs/:drone_name', async (req, res) => {
     const { drone_name } = req.params;
-    const { date } = req.query;
+    const { date, since } = req.query;
     const sanitizedTableName = drone_name.replace(/[^a-zA-Z0-9_]/g, '_');
 
     try {
-        let query = date
-            ? `SELECT * FROM \`${sanitizedTableName}\` WHERE DATE(event_time) = ? ORDER BY event_time DESC`
-            : `SELECT * FROM \`${sanitizedTableName}\` ORDER BY event_time DESC LIMIT 10`;
+        let query;
+        let params = [];
 
-        const [rows] = await pool.execute(query, date ? [date] : []);
+        if (date) {
+            query = `SELECT * FROM \`${sanitizedTableName}\` WHERE DATE(event_time) = ? ORDER BY event_time DESC`;
+            params = [date];
+        } else if (since) {
+            query = `SELECT * FROM \`${sanitizedTableName}\` WHERE event_time > ? ORDER BY event_time DESC`;
+            params = [since];
+        } else {
+            query = `SELECT * FROM \`${sanitizedTableName}\` ORDER BY event_time DESC LIMIT 10`;
+        }
+
+        const [rows] = await pool.execute(query, params);
 
         // [Ngrok 우회] ngrok 무료 도메인은 브라우저 접속 시 경고 페이지(HTML)를 먼저 띄워 이미지가 깨짐.
         // 따라서 내 서버가 대신 헤더('ngrok-skip-browser-warning')를 달고 가져오는 프록시 경로로 변환해줘야 함.
         const logsWithProxy = rows.map(log => ({
             ...log,
-            image_path: log.image_path && log.image_path.includes('ngrok')
+            image_path: log.image_path && (log.image_path.startsWith('http') || log.image_path.includes('ngrok'))
                 ? `/api/proxy/image?url=${encodeURIComponent(log.image_path)}`
                 : log.image_path
         }));
@@ -160,7 +205,7 @@ app.get('/api/drones/:drone_name/live-photos', async (req, res) => {
         if (!connectTime) return res.json({ success: true, data: { photos: [] } });
 
         const [rows] = await pool.execute(`
-            SELECT id, event_time, image_path, confidence, gps_lat, gps_lon
+            SELECT id, event_time, image_path, confidence, gps_lat, gps_lon, risk_level, temperature, humidity, wind_speed
             FROM \`${sanitizedTableName}\`
             WHERE event_time > ?
             ORDER BY event_time DESC
@@ -169,7 +214,7 @@ app.get('/api/drones/:drone_name/live-photos', async (req, res) => {
         // [Ngrok 우회] 라이브 포토에도 동일하게 프록시 적용
         const photosWithProxy = rows.map(photo => ({
             ...photo,
-            image_path: photo.image_path && photo.image_path.includes('ngrok')
+            image_path: photo.image_path && (photo.image_path.startsWith('http') || photo.image_path.includes('ngrok'))
                 ? `/api/proxy/image?url=${encodeURIComponent(photo.image_path)}`
                 : photo.image_path
         }));
@@ -211,24 +256,7 @@ app.get('/api/proxy/image', async (req, res) => {
     }
 });
 
-/**
- * GET /api/proxy/video
- */
-app.get('/api/proxy/video', async (req, res) => {
-    const { url } = req.query;
-    if (!url) return res.status(400).send('URL required');
 
-    try {
-        const response = await axios({
-            method: 'get', url, responseType: 'stream', timeout: 0,
-            validateStatus: (status) => status >= 200 && status < 303
-        });
-        res.set('Content-Type', response.headers['content-type']);
-        response.data.pipe(res);
-    } catch (error) {
-        if (!res.headersSent) res.sendStatus(502);
-    }
-});
 
 /**
  * POST /api/drones/:drone_name/connect
@@ -237,6 +265,44 @@ app.post('/api/drones/:drone_name/connect', async (req, res) => {
     try {
         await pool.execute('UPDATE drone_list SET drone_connect_time = NOW() WHERE drone_name = ?', [req.params.drone_name]);
         res.json({ success: true, message: 'Connected' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/drones/:drone_name/video-url
+ */
+app.get('/api/drones/:drone_name/video-url', async (req, res) => {
+    const { drone_name } = req.params;
+    try {
+        const [rows] = await pool.execute('SELECT stream_video_url FROM video_url WHERE drone_name = ?', [drone_name]);
+        if (rows.length > 0) {
+            res.json({ success: true, data: { videoUrl: rows[0].stream_video_url } });
+        } else {
+            res.json({ success: true, data: { videoUrl: null } });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/drones/:drone_name/status
+ */
+app.get('/api/drones/:drone_name/status', async (req, res) => {
+    const { drone_name } = req.params;
+    try {
+        const [rows] = await pool.execute(
+            'SELECT drone_lat, drone_lon, drone_connect_time, risk_level, temperature, humidity, wind_speed FROM drone_list WHERE drone_name = ?',
+            [drone_name]
+        );
+        if (rows.length > 0) {
+            // battery 정보 제거
+            res.json({ success: true, data: rows[0] });
+        } else {
+            res.status(404).json({ success: false, message: 'Drone not found' });
+        }
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

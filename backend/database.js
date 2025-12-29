@@ -89,7 +89,11 @@ async function createDroneLogTable(droneName) {
                 confidence FLOAT NULL,
                 image_path VARCHAR(255) NULL,
                 gps_lat DECIMAL(10,8) NULL,
-                gps_lon DECIMAL(11,8) NULL
+                gps_lon DECIMAL(11,8) NULL,
+                risk_level CHAR(100) NULL,
+                temperature FLOAT NULL,
+                humidity INT NULL,
+                wind_speed FLOAT NULL
             )
         `;
 
@@ -106,16 +110,62 @@ async function createDroneLogTable(droneName) {
 }
 
 /**
- * 연결 테스트 함수
+ * 드론 전용 DB 유저 생성 및 권한 부여 함수
+ * @param {string} droneDbId - 드론 ID (DB 유저명으로 사용)
+ * @param {string} droneName - 드론 이름 (전용 테이블명 파악용)
+ */
+async function createDroneDbUser(droneDbId, droneName) {
+    const connection = await pool.getConnection();
+    const sanitizedName = droneName.replace(/[^a-zA-Z0-9_]/g, '_');
+    const dbName = process.env.DB_NAME || 'smoke_db';
+
+    try {
+        console.log(`👤 드론 DB 유저 생성 시작: ${droneDbId}`);
+
+        // 1. 기존 유저가 있다면 삭제
+        await connection.query(`DROP USER IF EXISTS ?@'%'`, [droneDbId]);
+
+        // 2. 유저 생성 (비밀번호 없이 접속 가능하도록 설정하거나, 특정 비밀번호 설정)
+        // 로우코드 환경 특성상 비밀번호 없이 접속하거나 간단한 비밀번호 사용
+        // 여기서는 예시로 droneDbId를 비밀번호로 사용
+        await connection.query(`CREATE USER ?@'%' IDENTIFIED BY ?`, [droneDbId, droneDbId]);
+
+        // 3. 권한 부여
+        // 3-1. drone_list 테이블: SELECT(조회), UPDATE(GPS/접속시간 갱신)
+        await connection.query(`GRANT SELECT, UPDATE ON \`${dbName}\`.drone_list TO ?@'%'`, [droneDbId]);
+
+        // 3-2. 본인 전용 로그 테이블: SELECT(조회), INSERT(로그 기록)
+        await connection.query(`GRANT SELECT, INSERT ON \`${dbName}\`.\`${sanitizedName}\` TO ?@'%'`, [droneDbId]);
+
+        // 4. 권한 적용
+        await connection.query('FLUSH PRIVILEGES');
+
+        console.log(`✅ 드론 DB 유저 생성 완료: ${droneDbId}`);
+
+    } catch (error) {
+        console.error(`❌ 드론 DB 유저 생성 실패 (${droneDbId}):`, error.message);
+        // 유저 생성 실패는 치명적이지 않을 수 있으므로 에러를 던지지 않고 로그만 남김 (선택 사항)
+        // 하지만 권한이 없으면 작동을 안하므로 throw 하는 것이 맞음
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
+
+
+
+/**
+ * DB 연결 테스트 함수
  */
 async function testConnection() {
     try {
         const connection = await pool.getConnection();
-        console.log('✅ MySQL 연결 성공!');
+        console.log('✅ 데이터베이스 연결 성공');
         connection.release();
         return true;
     } catch (error) {
-        console.error('❌ MySQL 연결 실패:', error.message);
+        console.error('❌ 데이터베이스 연결 실패:', error.message);
         return false;
     }
 }
@@ -124,5 +174,6 @@ module.exports = {
     pool,
     initializeDatabase,
     createDroneLogTable,
+    createDroneDbUser,
     testConnection
 };
