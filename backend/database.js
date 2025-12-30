@@ -125,10 +125,8 @@ async function createDroneDbUser(droneDbId, droneName) {
         // 1. 기존 유저가 있다면 삭제
         await connection.query(`DROP USER IF EXISTS ?@'%'`, [droneDbId]);
 
-        // 2. 유저 생성 (비밀번호 없이 접속 가능하도록 설정하거나, 특정 비밀번호 설정)
-        // 로우코드 환경 특성상 비밀번호 없이 접속하거나 간단한 비밀번호 사용
-        // 여기서는 예시로 droneDbId를 비밀번호로 사용
-        await connection.query(`CREATE USER ?@'%' IDENTIFIED BY ?`, [droneDbId, droneDbId]);
+        // 2. 유저 생성 (비밀번호 없이)
+        await connection.query(`CREATE USER ?@'%' IDENTIFIED BY ''`, [droneDbId]);
 
         // 3. 권한 부여
         // 3-1. drone_list 테이블: SELECT(조회), UPDATE(GPS/접속시간 갱신)
