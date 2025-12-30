@@ -56,6 +56,17 @@ async function initializeDatabase() {
         `);
         console.log('✅ video_url 테이블 준비 완료');
 
+        // 3. push_tokens 테이블 생성 (푸시 알림용)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS push_tokens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                expo_push_token VARCHAR(255) NOT NULL UNIQUE,
+                device_id VARCHAR(255) NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('✅ push_tokens 테이블 준비 완료');
+
         console.log('🎉 데이터베이스 초기화 완료!');
     } catch (error) {
         console.error('❌ 데이터베이스 초기화 실패:', error.message);

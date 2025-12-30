@@ -90,7 +90,8 @@ def send_fire_event(confidence, gps_lat=None, gps_lon=None):
         "confidence": round(confidence, 4),
         "image_path": f"/captures/{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
         "gps_lat": round(gps_lat, 8),
-        "gps_lon": round(gps_lon, 8)
+        "gps_lon": round(gps_lon, 8),
+        "risk_level": round(confidence * 100, 2)  # Use confidence as risk level for simulation (0-100)
     }
     
     try:

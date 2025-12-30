@@ -11,7 +11,69 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
+const { Expo } = require('expo-server-sdk');
 const { pool, initializeDatabase, createDroneLogTable, createDroneDbUser, testConnection } = require('./database');
+
+// Expo Push Notification 클라이언트
+const expo = new Expo();
+
+/**
+ * 모든 등록된 기기에 푸시 알림 전송
+ */
+async function sendPushNotifications(data) {
+    console.log('📢 sendPushNotifications 호출됨:', data);
+    try {
+        const [tokenRows] = await pool.execute('SELECT expo_push_token FROM push_tokens');
+        if (tokenRows.length === 0) {
+            console.log('📱 등록된 푸시 토큰이 없습니다.');
+            return;
+        }
+
+        const messages = [];
+        for (const row of tokenRows) {
+            const token = row.expo_push_token;
+            if (!Expo.isExpoPushToken(token)) {
+                console.warn(`⚠️ 유효하지 않은 토큰: ${token}`);
+                continue;
+            }
+
+            // 위험도 텍스트 변환
+            // 위험도 텍스트 설
+            const riskData = parseFloat(data.risk_level) || 0;
+            let riskText = '안전';
+            if (riskData >= 80) riskText = '위험';
+            else if (riskData >= 50) riskText = '주의';
+
+            messages.push({
+                to: token,
+                sound: 'default',
+                title: `[${data.drone_name}] 연기 감지`,
+                body: `연기 확률: ${(data.confidence * 100).toFixed(0)}% | 산불 위험도: ${riskText}`,
+                data: {
+                    type: 'fire_detection',
+                    drone_name: data.drone_name,
+                    confidence: data.confidence,
+                    risk_level: data.risk_level
+                },
+                priority: 'high',
+            });
+        }
+
+        if (messages.length === 0) return;
+
+        const chunks = expo.chunkPushNotifications(messages);
+        for (const chunk of chunks) {
+            try {
+                const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+                console.log(`📤 푸시 알림 전송 완료: ${ticketChunk.length}건`);
+            } catch (error) {
+                console.error('❌ 푸시 전송 실패:', error.message);
+            }
+        }
+    } catch (error) {
+        console.error('❌ 푸시 알림 처리 오류:', error.message);
+    }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -140,6 +202,12 @@ app.post('/api/event', async (req, res) => {
         ]);
 
         console.log(`🔥 Fire Event: ${drone_name} (${(confidence * 100).toFixed(1)}%) - Risk: ${risk_level}`);
+
+        // 3. 푸시 알림 전송 (비동기, 응답 블로킹 안함)
+        sendPushNotifications({ drone_name, confidence, risk_level }).catch(err =>
+            console.error('Push notification error:', err.message)
+        );
+
         res.json({ success: true, message: 'Event saved', data: { event_id: result.insertId } });
 
     } catch (error) {
@@ -321,6 +389,33 @@ app.get('/api/drones', async (req, res) => {
 });
 
 /**
+ * POST /api/push-token
+ * 푸시 알림 토큰 등록
+ */
+app.post('/api/push-token', async (req, res) => {
+    const { expo_push_token, device_id } = req.body;
+
+    if (!expo_push_token) {
+        return res.status(400).json({ success: false, message: 'expo_push_token required' });
+    }
+
+    try {
+        // UPSERT: 이미 있으면 업데이트, 없으면 삽입
+        await pool.execute(`
+            INSERT INTO push_tokens (expo_push_token, device_id, created_at)
+            VALUES (?, ?, NOW())
+            ON DUPLICATE KEY UPDATE device_id = ?, created_at = NOW()
+        `, [expo_push_token, device_id || null, device_id || null]);
+
+        console.log(`📱 푸시 토큰 등록: ${expo_push_token.substring(0, 30)}...`);
+        res.json({ success: true, message: 'Token registered' });
+    } catch (error) {
+        console.error('❌ 토큰 등록 실패:', error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
  * GET /api/health
  */
 app.get('/api/health', (req, res) => res.json({ status: 'running', timestamp: new Date().toISOString() }));
@@ -328,11 +423,68 @@ app.get('/api/health', (req, res) => res.json({ status: 'running', timestamp: ne
 // SPA Fallback
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../frontend/dist/index.html')));
 
+// DB 모니터링 (3초 간격) - 앱 종료 시에도 알림 발송용
+let lastCheckTime = new Date();
+let isProcessing = false;
+
+function startDatabaseWatcher() {
+    console.log('👀 DB 모니터링 시작 (3초 간격) - 자동 알림 활성화');
+    setInterval(async () => {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        try {
+            // 1. 드론 목록 가져오기
+            const [drones] = await pool.execute('SELECT drone_name FROM drone_list');
+
+            // 현재 시간 기록 (쿼리 후 갱신용)
+            // 주의: DB Insert 시간과 서버 시간 차이를 고려하여, 약간의 버퍼를 둘 수도 있음
+            const nextCheckTime = new Date();
+
+            for (const drone of drones) {
+                const tableName = drone.drone_name.replace(/[^a-zA-Z0-9_]/g, '_');
+
+                // 2. 각 드론의 로그 테이블에서 새로운 고위험 데이터 조회
+                try {
+                    const [rows] = await pool.execute(
+                        `SELECT * FROM \`${tableName}\` WHERE event_time > ? AND confidence >= 0.75 ORDER BY event_time ASC`,
+                        [lastCheckTime]
+                    );
+
+                    for (const row of rows) {
+                        // 3. 알림 전송
+                        await sendPushNotifications({
+                            drone_name: drone.drone_name,
+                            confidence: row.confidence,
+                            risk_level: row.risk_level
+                        });
+                    }
+                } catch (err) {
+                    // 테이블이 아직 없을 수 있음 (무시)
+                    if (err.code !== 'ER_NO_SUCH_TABLE') {
+                        // console.error(`Watch Error`, err.message);
+                    }
+                }
+            }
+            lastCheckTime = nextCheckTime; // 시간 갱신
+
+        } catch (error) {
+            console.error('DB Watcher Error:', error.message);
+        } finally {
+            isProcessing = false;
+        }
+    }, 3000);
+}
+
 // START
 async function startServer() {
     console.log('🚀 드론 화재 감지 시스템 서버 (Optimized Mode)');
     await testConnection();
     try { await initializeDatabase(); } catch (e) { console.warn('DB Init Warn:', e.message); }
+
+    // 모니터링 시작
+    startDatabaseWatcher();
+
     app.listen(PORT, () => console.log(`📡 Server running on http://localhost:${PORT}`));
 }
 
