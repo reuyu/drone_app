@@ -1,0 +1,56 @@
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 428px; /* 모바일 최대 너비 */
+    height: calc(60px + env(safe-area-inset-bottom, 0px)); /* Safe Area 고려 */
+    background-color: #FFFFFF;
+    border-top: 1px solid #F0F0F0;
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: #000000;
+    cursor: pointer;
+    padding: 8px 0;
+    min-height: 44px; /* 터치 최소 크기 */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: all 0.2s;
+}
+
+.nav-item.active {
+    color: #000000;
+}
+
+.nav-item.active .nav-label {
+    font-weight: 700;
+}
+
+.nav-item:active {
+    opacity: 0.6;
+}
+
+.nav-icon {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+}
+
+.nav-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+}

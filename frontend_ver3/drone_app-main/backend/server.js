@@ -37,13 +37,12 @@ async function sendPushNotifications(data) {
                 continue;
             }
 
-            // 위험도 텍스트 변환 (새 기준: 점수가 낮을수록 위험)
-            // 4.0 이상: 안전, 2.5~4.0: 경계, 2.0~2.5: 위험, 2.0 미만: 심각
-            const riskData = parseFloat(data.risk_level) || 5;
+            // 위험도 텍스트 변환
+            // 위험도 텍스트 설
+            const riskData = parseFloat(data.risk_level) || 0;
             let riskText = '안전';
-            if (riskData < 2.0) riskText = '심각';
-            else if (riskData < 2.5) riskText = '위험';
-            else if (riskData < 4.0) riskText = '경계';
+            if (riskData >= 80) riskText = '위험';
+            else if (riskData >= 50) riskText = '주의';
 
             messages.push({
                 to: token,
@@ -134,12 +133,29 @@ app.post('/api/register', async (req, res) => {
 
         const logTable = await createDroneLogTable(drone_name);
 
-        // [NEW] 드론 전용 DB 유저 생성 및 권한 부여
-        await createDroneDbUser(drone_db_id, drone_name);
+        // [NEW] 드론 전용 DB 유저 생성 및 권한 부여 (실패해도 등록은 성공)
+        let userCreated = false;
+        try {
+            await createDroneDbUser(drone_db_id, drone_name);
+            userCreated = true;
+        } catch (userError) {
+            console.warn(`⚠️ DB 유저 생성 실패 (드론 등록은 계속 진행): ${userError.message}`);
+            // 유저 생성 실패해도 드론 등록은 성공으로 처리
+        }
 
         await connection.commit();
 
-        res.json({ success: true, message: 'Registered', data: { drone_name, drone_db_id, log_table: logTable, video_url: videoUrl } });
+        res.json({ 
+            success: true, 
+            message: 'Registered', 
+            data: { 
+                drone_name, 
+                drone_db_id, 
+                log_table: logTable, 
+                video_url: videoUrl,
+                db_user_created: userCreated
+            } 
+        });
 
     } catch (error) {
         await connection.rollback();
@@ -274,7 +290,7 @@ app.get('/api/drones/:drone_name/live-photos', async (req, res) => {
         if (!connectTime) return res.json({ success: true, data: { photos: [] } });
 
         const [rows] = await pool.execute(`
-            SELECT id, event_time, image_path, confidence, gps_lat, gps_lon, risk_level, temperature, humidity, wind_speed, location_name
+            SELECT id, event_time, image_path, confidence, gps_lat, gps_lon, risk_level, temperature, humidity, wind_speed
             FROM \`${sanitizedTableName}\`
             WHERE event_time > ?
             ORDER BY event_time DESC
@@ -363,7 +379,7 @@ app.get('/api/drones/:drone_name/status', async (req, res) => {
     const { drone_name } = req.params;
     try {
         const [rows] = await pool.execute(
-            'SELECT drone_lat, drone_lon, drone_connect_time, risk_level, temperature, humidity, wind_speed, location_name FROM drone_list WHERE drone_name = ?',
+            'SELECT drone_lat, drone_lon, drone_connect_time, risk_level, temperature, humidity, wind_speed FROM drone_list WHERE drone_name = ?',
             [drone_name]
         );
         if (rows.length > 0) {
@@ -382,7 +398,7 @@ app.get('/api/drones/:drone_name/status', async (req, res) => {
  */
 app.get('/api/drones', async (req, res) => {
     try {
-        const [rows] = await pool.execute('SELECT drone_db_id, drone_name, drone_video_url, drone_connect_time, drone_lat, drone_lon, location_name FROM drone_list ORDER BY drone_connect_time DESC');
+        const [rows] = await pool.execute('SELECT drone_db_id, drone_name, drone_video_url, drone_connect_time, drone_lat, drone_lon FROM drone_list ORDER BY drone_connect_time DESC');
         res.json({ success: true, data: { drones: rows } });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });

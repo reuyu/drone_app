@@ -1,0 +1,5 @@
+예전 UI(간단 실행)
+flontend_ver1 실행
+광희 UI적용 실행(expo 설치해야댐)
+backend에서  npm start
+frontend_ver2에서 npm run start:public (chan ip로 하드코딩 되어 있어서 바꿔줘야함)

@@ -1,0 +1,303 @@
+.home-page {
+  padding: 16px;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); /* 하단 네비게이션 + Safe Area */
+  max-width: 100%;
+  background-color: #FFFFFF;
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+.home-header {
+  padding: 16px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F0F0F0;
+  margin: 0 -16px 0 -16px;
+}
+
+.home-header h1 {
+  font-size: 24px; /* 모바일 최적화 */
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+}
+
+.drone-list-container {
+  padding: 16px 0;
+}
+
+.drone-card-new {
+  display: flex;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #F0F0F0;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  /* 터치 최적화 */
+  min-height: 72px; /* 터치하기 쉬운 크기 */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* 더블탭 줌 방지 */
+}
+
+.drone-card-new:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.drone-card-new:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.drone-icon-container {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 16px;
+}
+
+.drone-info-new {
+  flex: 1;
+}
+
+.drone-name-new {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-badge-new {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.battery-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.battery-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #8E8E93;
+}
+
+.today-events-badge {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #FF3B30;
+  font-weight: 600;
+}
+
+.arrow-new {
+  font-size: 24px;
+  color: #8E8E93;
+  margin-left: 8px;
+}
+
+.empty-state-new {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: #8E8E93;
+  font-size: 16px;
+}
+
+/* 플로팅 액션 버튼 */
+.fab-button {
+  position: fixed;
+  right: 20px;
+  bottom: calc(100px + env(safe-area-inset-bottom, 0px)); /* 하단 네비게이션 + Safe Area */
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background-color: #000000;
+  color: #FFFFFF;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  z-index: 100;
+  /* 터치 최적화 */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.fab-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.fab-button:active {
+  transform: scale(0.95);
+}
+
+.fab-icon {
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* 모달 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background-color: #FFFFFF;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  max-height: 80vh;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #000000;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: opacity 0.2s;
+}
+
+.modal-close:hover {
+  opacity: 0.6;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.modal-input {
+  width: 100%;
+  border: 1px solid #E0E0E0;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  box-sizing: border-box;
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: #000000;
+}
+
+.input-hint {
+  font-size: 12px;
+  color: #8E8E93;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #F0F0F0;
+}
+
+.submit-button {
+  width: 100%;
+  background-color: #000000;
+  color: #FFFFFF;
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.submit-button:hover:not(.submit-button-disabled) {
+  opacity: 0.9;
+}
+
+.submit-button-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -104,8 +104,7 @@ async function createDroneLogTable(droneName) {
                 risk_level CHAR(100) NULL,
                 temperature FLOAT NULL,
                 humidity INT NULL,
-                wind_speed FLOAT NULL,
-                location_name VARCHAR(255) NULL COMMENT '현재 위치 주소(동/면 단위)'
+                wind_speed FLOAT NULL
             )
         `;
 
@@ -154,8 +153,8 @@ async function createDroneDbUser(droneDbId, droneName) {
 
     } catch (error) {
         console.error(`❌ 드론 DB 유저 생성 실패 (${droneDbId}):`, error.message);
-        // 유저 생성 실패는 치명적이지 않을 수 있으므로 에러를 던지지 않고 로그만 남김 (선택 사항)
-        // 하지만 권한이 없으면 작동을 안하므로 throw 하는 것이 맞음
+        // 유저 생성 실패는 치명적이지 않을 수 있으므로 에러를 던짐 (서버에서 처리)
+        // 일반적으로 권한 부족이나 DB 설정 문제로 발생
         throw error;
     } finally {
         connection.release();

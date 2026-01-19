@@ -1,0 +1,185 @@
+.history-page-new {
+    padding: 0;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+    background-color: #FFFFFF;
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    max-width: 428px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.history-empty-new {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+    color: #8E8E93;
+    font-size: 16px;
+}
+
+.history-header-new {
+    padding: 16px;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    border-bottom: 1px solid #F0F0F0;
+}
+
+.history-header-title {
+    font-size: 24px; /* 모바일 최적화 */
+    font-weight: 700;
+    color: #000000;
+    margin: 0;
+}
+
+.history-controls-new {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+}
+
+.history-drone-select,
+.history-date-input {
+    flex: 1;
+    padding: 12px;
+    background: #FFFFFF;
+    border: 1px solid #E0E0E0;
+    color: #000000;
+    border-radius: 12px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.history-drone-select:focus,
+.history-date-input:focus {
+    outline: none;
+    border-color: #000000;
+}
+
+.history-list-container {
+    padding: 0 16px;
+}
+
+.history-loading {
+    text-align: center;
+    padding: 40px;
+    color: #8E8E93;
+}
+
+.history-card-new {
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #F0F0F0;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.history-card-new:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.history-card-new:active {
+    transform: scale(0.98);
+    background-color: #F9F9F9;
+}
+
+.history-image-new {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background-color: #F5F5F5;
+}
+
+.history-no-image {
+    width: 100%;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #F5F5F5;
+    color: #8E8E93;
+    font-size: 12px;
+}
+
+.history-info-new {
+    padding: 16px;
+}
+
+.history-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.history-date-new {
+    font-size: 16px;
+    font-weight: 600;
+    color: #000;
+}
+
+.history-danger-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.history-time-new {
+    font-size: 14px;
+    color: #000;
+    font-weight: 500;
+}
+
+.history-location-new {
+    font-size: 14px;
+    color: #000;
+    font-weight: 500;
+}
+
+.history-details-new {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.history-drone-id {
+    font-size: 14px;
+    color: #8E8E93;
+}
+
+.history-probability-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: #FF3B30;
+}
+
+.history-weather-info {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #F0F0F0;
+}
+
+.history-weather-text {
+    font-size: 13px;
+    color: #8E8E93;
+}
+
+.history-no-result {
+    text-align: center;
+    padding: 40px;
+    color: #8E8E93;
+}
+
+.history-no-result-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 10px;
+}

@@ -1,0 +1,222 @@
+.monitor-page-new {
+    padding: 0;
+    padding-bottom: 100px;
+    background-color: #FFFFFF;
+    min-height: 100vh;
+}
+
+.monitor-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #8E8E93;
+}
+
+/* 헤더 */
+.monitor-header-new {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    padding-top: 20px;
+    min-height: 50px;
+}
+
+.monitor-back-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #000;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    font-weight: 300;
+}
+
+.monitor-header-center {
+    flex: 1;
+    text-align: center;
+}
+
+.monitor-header-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #000;
+    margin: 0;
+}
+
+.monitor-header-right {
+    width: 40px;
+}
+
+/* GPS 정보 */
+.monitor-gps-container {
+    text-align: center;
+    padding-bottom: 12px;
+    padding: 0 20px 12px 20px;
+}
+
+.monitor-gps-text {
+    font-size: 12px;
+    color: #8E8E93;
+}
+
+/* 날씨 정보 */
+.monitor-weather-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px 20px 20px;
+    gap: 8px;
+}
+
+.monitor-weather-text {
+    font-size: 14px;
+    color: #000;
+    font-weight: 500;
+}
+
+.monitor-weather-separator {
+    font-size: 14px;
+    color: #8E8E93;
+}
+
+/* 영상 영역 */
+.monitor-video-container {
+    margin: 0 20px 24px 20px;
+}
+
+.monitor-video-placeholder {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #1C1C1E;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.monitor-video-placeholder-text {
+    color: #FFFFFF;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.monitor-live-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.monitor-video-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.monitor-video-subtext {
+    color: #999999;
+    font-size: 14px;
+}
+
+/* Detection Log 섹션 */
+.monitor-detection-section {
+    padding: 0 20px 32px 20px;
+}
+
+.monitor-detection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.monitor-detection-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #000;
+    margin: 0 0 4px 0;
+}
+
+.monitor-event-count {
+    font-size: 14px;
+    color: #8E8E93;
+    margin: 0;
+}
+
+.monitor-latest-detection {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #F0F0F0;
+}
+
+.monitor-latest-label {
+    font-size: 14px;
+    color: #8E8E93;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.monitor-latest-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.monitor-latest-probability {
+    font-size: 16px;
+    font-weight: 700;
+    color: #FF3B30;
+}
+
+.monitor-latest-time {
+    font-size: 14px;
+    color: #8E8E93;
+}
+
+/* Detection Cards - Horizontal Scroll */
+.monitor-detection-list {
+    display: flex;
+    overflow-x: auto;
+    padding: 8px 0;
+    gap: 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.monitor-detection-list::-webkit-scrollbar {
+    height: 4px;
+}
+
+.monitor-detection-list::-webkit-scrollbar-track {
+    background: #F5F5F5;
+    border-radius: 2px;
+}
+
+.monitor-detection-list::-webkit-scrollbar-thumb {
+    background: #8E8E93;
+    border-radius: 2px;
+}
+
+/* 라이브 포토 섹션 */
+.monitor-live-photos-section {
+    margin-top: 24px;
+}
+
+.monitor-live-photos-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #000;
+    margin: 0 0 12px 0;
+}
